@@ -1,5 +1,5 @@
 'use strict'
-
+const appRoot = require('app-root-path');
 const {promises} = require('fs');
 
 const {loggerBuilder} = require('../logging');
@@ -60,7 +60,7 @@ function buildFeatures(featureModules){
 async function loadFeatures(inputs){
     let {featurePath} = inputs;
 
-    const featuresBasePath = featurePath ?? './features';
+    const featuresBasePath = featurePath ?? `${appRoot}/features`;
     let allFeatureDirs = await readFeatureDir(featuresBasePath);
 
     let {readError} = allFeatureDirs;
@@ -73,7 +73,7 @@ async function loadFeatures(inputs){
         const featureModules = {};
 
         allFeatureDirs.forEach(featureDir => {
-            featureModules[featureDir] = require('../../'.concat(featuresBasePath,'/',featureDir));
+            featureModules[featureDir] = require(`${featuresBasePath}/${featureDir}`);
         });
 
         return {

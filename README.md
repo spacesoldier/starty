@@ -2,7 +2,7 @@
 A lightweight framework which helps building modular and configurable Node.js applications
 
 ## current version
-1.0.0 rc - the very first attempt, usable for building simple REST API which could call external API
+1.0.xx rc - the very first attempt, usable for building simple REST API which could call external API
 
 ## features
 - automatic feature discovery

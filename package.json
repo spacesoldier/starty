@@ -1,0 +1,22 @@
+{
+  "name": "@supersilvio/starty",
+  "version": "1.0.0",
+  "description": "a lightweight framework which helps building modular and configurable Node.js applications",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spacesoldier/starty.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/spacesoldier/starty/issues"
+  },
+  "homepage": "https://github.com/spacesoldier/starty#readme",
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
+}

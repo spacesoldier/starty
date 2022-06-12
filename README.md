@@ -10,3 +10,9 @@ A lightweight framework which helps building modular and configurable Node.js ap
 - build a routing mechanics based on the provided configuration file
 - routing the requests from logic parts of custom features to external resources
 - logging
+
+## an example usage:
+https://github.com/spacesoldier/messageBridgeServicePrototype
+
+## documentation:
+Coming soon!

@@ -19,9 +19,10 @@ This scenario may look quite familiar for the programmers who may be new to Node
 ### Writing the configuration
 First thing first, you may already have a vision of a way to integrate your application with others in your project landscape. Or it will be an early bird which will act as a prototype of a whole system. Or you just need to write a microservice with a limited set of a functions.
 At the moment, Starty can help you to build a REST API and integrate with any other REST API.
-So there could be defined two main sections in your config.yml file:
-- client
-- server
+So there could be defined two main sections in your `config.yml` file:
+- clients
+- servers
+
 And, of course, you can provide an application name. Let's take a look at the empty configuration template:
 ```yaml
 # an application name, it will appear in logs on startup

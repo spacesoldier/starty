@@ -40,7 +40,8 @@ clients:
 
 
 ```
-
+&nbsp;
+#### Defining servers
 Next, let's configure the server. We need to set the `port` number to listen, `hosts` or IP addresses from where to receive the requests and the `protocol` it supports. Also, it might be useful to set the name of the server.
 When the server is defined, we can set up its endpoints. 
 ```yaml
@@ -57,7 +58,7 @@ Talking about endpoints let's assume that one endpoint has several basic propert
 An example of an endpoint which serves the requests with one method could be a controller providing the static content on a `GET` request.
 ```yaml
 # a name of the endpoint which serves static content
-serve-static:
+serve-static:   # server name
   location: "/"
     methods:
       get:
@@ -71,7 +72,7 @@ Say, we could want it to start a new session on a `GET` request, validate an exi
 ```yaml
 # an example of the endpoint which accepts requests 
 # with several methods
-session:
+session:    # endpoint name
   location: "/session"
     methods:
       get:
@@ -81,14 +82,34 @@ session:
       delete:
         handler: "deleteSession"
 ```
+&nbsp;
+#### Defining clients
+We have imagined a session controller. But it may not always know everything about the users and their roles.
+So we can ask an external authorization service for help. Thus, we need to define a client for that purpose.
+
+
+```yaml
+# a client which purpose is to call an external API
+auth-api:   # client name
+  type: "web"
+  url: "https://authorization-service/auth"
+  port: 8080
+  methods:
+    post:
+      input: "authApiRequest"
+      success: "onAuthSuccess"
+      fail: "onAuthError"
+```
+&nbsp;
+#### Putting it all together
 
 
 ## Example project:
 https://github.com/spacesoldier/messageBridgeServicePrototype
 
 
-## Version
+## Version history
 0.1.xx - the very first attempt, usable for building simple REST API which could call external API
 
-## Contacts:
+## Contacts
 email: silviosalgari@gmail.com

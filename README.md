@@ -109,7 +109,7 @@ auth-api:   # client name
 &nbsp;
 #### Bringing it all together
 
-After all, the example of an application configuration will look like the following:
+As a result, the example of an application configuration will look like the following:
 
 ```yaml
 # an application name, it will appear in logs on startup

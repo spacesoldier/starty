@@ -94,6 +94,9 @@ One of the important moments is to choose a `type` of the interaction with the e
 At the moment, the only one type of clients available. 
 It is *web* client which can send requests using *http* or *https* protocols.
 
+Next, it's a good moment to think about the way the client may perform its operations.
+Probably it could be useful to imagine it has several inputs dedicated to the `methods` used for calling an external API endpoint.
+
 ```yaml
 # a client which purpose is to call an external API
 auth-api:   # client name

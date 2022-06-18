@@ -70,7 +70,7 @@ serve-static:   # server name
 Next, an example of an endpoint which serves the requests with several methods we could imagine a session controller.
 Say, we could want it to start a new session on a `GET` request, validate an existing session on `POST` and terminate existing session on `DELETE` request.
 ```yaml
-# an example of the endpoint which accepts requests 
+# an example of the endpoint which accepts the requests 
 # with several methods
 session:    # endpoint name
   location: "/session"
@@ -87,6 +87,12 @@ session:    # endpoint name
 We have imagined a session controller. But it may not always know everything about the users and their roles.
 So we can ask an external authorization service for help. Thus, we need to define a client for that purpose.
 
+To allow the requests achieve their target API, several basic properties needed to be set.
+Obviously, an `url` of the endpoint to call should be defined.
+In some cases it could be needed to set up the `port`.
+One of the important moments is to choose a `type` of the interaction with the external service.
+At the moment, the only one type of clients available. 
+It is *web* client which can send requests using *http* or *https* protocols.
 
 ```yaml
 # a client which purpose is to call an external API
@@ -101,7 +107,64 @@ auth-api:   # client name
       fail: "onAuthError"
 ```
 &nbsp;
-#### Putting it all together
+#### Bringing it all together
+
+After all, the example of an application configuration will look like the following:
+
+```yaml
+# an application name, it will appear in logs on startup
+app-name: "Starty simple app"
+
+# this section describes the application logic in a form of services
+# it consists of servers and their endpoints definitions
+servers:
+  # a name of the server inside the application
+  my-http-server:
+    hosts:
+      - "127.0.0.1"
+    port: 8080
+    protocol: "http"
+    endpoints:
+
+      # a name of the endpoint which serves static content
+      serve-static:   # server name
+        location: "/"
+          methods:
+            get:
+              # the name of the function which handles 
+              #  the requests to endpoint
+              handler: "serveStatic"
+  
+      # an example of the endpoint which accepts the requests 
+      # with several methods
+      session:    # endpoint name
+        location: "/session"
+          methods:
+            get:
+              handler: "newSession"
+            post:
+              handler: "validateSession"
+            delete:
+              handler: "deleteSession"
+
+
+# this section describes the usage of external services
+# by defining the resources to call and how to handle the results
+clients:
+  # a client which purpose is to call an external API
+  auth-api:   # client name
+    type: "web"
+    url: "https://authorization-service/auth"
+    port: 8080
+    methods:
+      post:
+        input: "authApiRequest"
+        success: "onAuthSuccess"
+        fail: "onAuthError"
+
+
+
+```
 
 
 ## Example project:

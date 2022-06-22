@@ -10,8 +10,8 @@ A lightweight framework which helps to build modular and configurable Node.js ap
 
 ## Getting started
 The process of application development with Starty consists of several steps which could be done in any sequence:
-- you write an application configuration in Yaml format
-- create the directories which will have your application code inside, feature by feature
+- writing an application configuration in Yaml format
+- creating the directories which will have your application code inside, feature by feature
 - let Starty discover your features at runtime and share them with the world according to the configuration
 
 This scenario may look quite familiar for the programmers who may be new to Node.js based development, but have some previous experience with Java and one of the most popular Java frameworks - Spring Boot.

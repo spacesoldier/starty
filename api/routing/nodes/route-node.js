@@ -129,10 +129,13 @@ function RouteNode(name, level){
             }
         }
 
-        // fix the recursive return by unpacking the below call result:
-        let {handler} = requestHandler;
-        if (handler !== undefined){
-            requestHandler = handler;
+        // if the request handler is found
+        if (requestHandler !== undefined){
+            // fix the recursive return by unpacking the below call result:
+            let {handler} = requestHandler;
+            if (handler !== undefined){
+                requestHandler = handler;
+            }
         }
 
         return {

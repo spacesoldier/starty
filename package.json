@@ -9,7 +9,19 @@
     "type": "git",
     "url": "git+https://github.com/spacesoldier/starty.git"
   },
-  "keywords": [],
+  "keywords": [
+                "framework",
+                "rapid-development",
+                "starter",
+                "bootstrap",
+                "rapid-prototyping",
+                "ddd",
+                "architecture",
+                "microservice",
+                "microservices",
+                "entry",
+                "entry-level"
+            ],
   "author": "Silvio <simpliziosalgari.com>",
   "license": "Apache-2.0",
   "bugs": {

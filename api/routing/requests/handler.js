@@ -1,9 +1,7 @@
 'use strict'
 
 const crypto = require('crypto');
-
 const {loggerBuilder, logLevels} = require("../../../logging");
-
 const {messageBuilder} = require('./message');
 
 function fail(statusCode, response, error, contentType='application/json'){
@@ -14,7 +12,13 @@ function fail(statusCode, response, error, contentType='application/json'){
 
     response.write(JSON.stringify(error));
     response.end();
+
 }
+
+const finishRequestLogger = loggerBuilder()
+                                    .name('OK')
+                                    .level(logLevels.INFO)
+                                .build();
 
 function ok(message){
     let {response, payload} = message;
@@ -26,6 +30,7 @@ function ok(message){
     response.write(payload);
     response.end();
 
+    finishRequestLogger.info(`Request ${message.msgId} completed`);
 }
 
 /**
@@ -87,13 +92,9 @@ function routedRequestHandler(name, routerFunction, internalSinks){
     const internals = internalSinks;
 
     const log = loggerBuilder()
-                            .name(handlerName)
-                            .level(logLevels.INFO)
-                        .build();
-
-
-
-
+                        .name(handlerName)
+                        .level(logLevels.INFO)
+                    .build();
 
     /**
      * Handles an incoming API request.
@@ -125,13 +126,14 @@ function routedRequestHandler(name, routerFunction, internalSinks){
 
             if (error !== undefined){
                 fail(404, rs, error);
+                log.info(`Request ${requestId} failed: ${error}`);
             } else {
                 let msg = messageBuilder()
-                                        .msgId(requestId)
-                                        .request(rq)
-                                        .response(rs)
-                                        .payload(requestBody)
-                                    .build();
+                                    .msgId(requestId)
+                                    .request(rq)
+                                    .response(rs)
+                                    .payload(requestBody)
+                                .build();
 
                 processMessage(handler, internals).process(msg);
 

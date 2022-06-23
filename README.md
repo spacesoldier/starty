@@ -177,7 +177,7 @@ clients:
 &nbsp;
 ### Writing the application logic
 When all the preparations are done it's time to write some application logic.
-In previous sections we defined a lot of stuff about the configuration and binding the connections 
+In previous sections we described a lot of stuff about the configuration and binding the connections 
 to the functions which will handle the requests and prepare the requests for external API.
 
 As it was said before, it is possible to start working on the project either with configuration step, or with logic implementation step.
@@ -212,13 +212,46 @@ Thus, the project directory structure may look like following:
 │         ├─── featureN.js
 │         └─── index.js
 ├─── app.js
-└─── config.yml
+├─── config.yml
+└─── package.json
 ```
 
 The contents of a feature directory could be more complex. In fact, it could contain any structure, probably a sort of project dedicated to this feature implementation.
-In fact the one important thing is to share through `index.js` file only the functions needed for the application and nothing more.
+In fact the one important thing is to share through `index.js` file only the certain functions needed for the application and nothing more.
 As Starty uses `require` to discover these functions, all other stuff from the feature implementation directory will live in its own scope, providing limited amount of integration points to the application scope.
 Yet another sort of open/closed principle in action, one may notice.
+
+&nbsp;
+#### Entry point
+The application entry point can be defined at the root level of an application directory.
+In our example described above its file was named as `app.js`.
+Let's take a look at the contents of this file:
+
+```javascript
+const {applicationStart} = require('starty');
+
+applicationStart('./config.yml');
+```
+
+Looks simple, isn't it? What happens here is the following: we load Starty using `require`,
+ tell where to find a configuration file and then let it do the job by discovering and configuring features from the directory which contains the features code.
+
+This approach could be useful when it comes to run your applications in containerized environment.
+For example, you can pack only the entry point and *node_modules* directory and mount the configuration file and features code directories
+from the external source. Which allows to develop large applications with many features and separate them into multiple applications with limited functionality in relatively simple and painless manner. 
+
+&nbsp;
+#### Writing features
+Now let's talk about writing the code aimed to implement the desired application feature set.
+The big idea of the development approach is to implement the blocks of technical requirements in separate modules called features for simplicity.
+One feature may contain the set of functions providing logic for one or more endpoints and client connections to the external resources.
+
+Technically it is possible to use the functions from different features building new features.
+This may cause the dependencies which at the moment could not be tracked by the framework. 
+So, it is up to developer to track and maintain them when making a decision to separate the functionality of one application to multiple microservices.
+
+
+
 
 ## Example project:
 https://github.com/spacesoldier/messageBridgeServicePrototype

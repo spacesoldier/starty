@@ -20,7 +20,8 @@
                 "microservice",
                 "microservices",
                 "entry",
-                "entry-level"
+                "entry-level",
+                "rest"
             ],
   "author": "Silvio <simpliziosalgari.com>",
   "license": "Apache-2.0",

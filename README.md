@@ -368,6 +368,10 @@ function newSession(msg){
         validUntil: new Date + 7     // which is valid for a week
     }
     
+    // statusCode could be set here
+    // especially when it's needed to report any errors
+    msg.response.statusCode = 200;
+    
     // setting the response headers
     msg.response.headers = {
         'content-type': 'application/json'
@@ -457,6 +461,8 @@ https://github.com/spacesoldier/messageBridgeServicePrototype
 
 
 ## Version history
+0.1.3 - returning status code 200 automatically only in case when it was not provided by user-defined code
+
 0.1.2 - added the support for the query parameters, fixed some bugs and finished the idea of separation the request handling by the framework and message processing by the user defined code
 
 0.1.1 - the very first draft, usable for building simple REST API which could call external API with GET and POST methods

@@ -61,7 +61,9 @@ function fail(statusCode, envelope, error){
 
 function ok(envelope){
 
-    envelope.response.statusCode = 200;
+    if (envelope.response.statusCode === undefined){
+        envelope.response.statusCode = 200;
+    }
 
     finishRequest(envelope);
 

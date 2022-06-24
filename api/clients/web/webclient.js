@@ -5,6 +5,7 @@ const {loggerBuilder, logLevels} = require("../../../logging");
 const {httpMethods, httpsMethods} = require('./implementations');
 const protocols = require('./protocols');
 const methods = require('./methods');
+const {encode} = require('node:querystring');
 
 const clientImplementations = {
     [protocols.HTTP] : httpMethods,
@@ -115,13 +116,21 @@ function webClient(name, baseUrl, port, method, onSuccess, onFail) {
             if (callMethod in implementation){
                 log.info(`We'll call ${urlToCall} with ${method} method`);
 
-                let {headers, requestBody} = msg.payload;
+                let {headers, query} = msg.request;
+                let requestBody = msg.payload;
+
+                let queryStr;
+                if (query !== undefined){
+                    queryStr = `?${encode(query)}`;
+                } else {
+                    queryStr = ''
+                }
 
                 let doRequest = implementation[method];
 
                 if (doRequest !== undefined){
                     doRequest(
-                        urlToCall,
+                        urlToCall+queryStr,
                         {
                             port: portToCall,
                             headers: {...headers}

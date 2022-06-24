@@ -10,8 +10,8 @@ A lightweight framework which helps to build modular and configurable Node.js ap
 
 ## Getting started
 The process of application development with Starty consists of several steps which could be done in any sequence:
-- writing an application configuration in Yaml format
-- creating the directories which will have your application code inside, feature by feature
+- [writing an application configuration](#write-conf) in Yaml format
+- [writing the code](#write-app) which implements your application requirements, feature by feature
 - let Starty discover your features at runtime and share them with the world according to the configuration
 
 This scenario may look quite familiar for the programmers who may be new to Node.js based development, but have some previous experience with Java and one of the most popular Java frameworks - Spring Boot.
@@ -21,7 +21,7 @@ This scenario may look quite familiar for the programmers who may be new to Node
 npm i starty
 ```
 
-### Writing the configuration
+### <a href="#write-conf"> Writing the configuration </a>
 You may already have a vision of what do you plan to build. And some details, for example, a way of integration for your application with others in your product's landscape. Or it could be an early bird which acts as a prototype of a whole system. Or you just need to write a microservice with a limited set of a functions.
 
 At the moment, Starty can help you to build a REST API and integrate with any other REST API.
@@ -175,7 +175,7 @@ clients:
 
 ```
 &nbsp;
-### Writing the application logic
+### <a href="#write-app"> Writing the application logic</a>
 When all the preparations are done it's time to write some application logic.
 In previous sections we described a lot of stuff about the configuration and binding the connections 
 to the functions which will handle the requests and prepare the requests for external API.
@@ -250,15 +250,216 @@ Technically it is possible to use the functions from different features building
 This may cause the dependencies which at the moment could not be tracked by the framework. 
 So, it is up to developer to track and maintain them when making a decision to separate the functionality of one application to multiple microservices.
 
+And now let's get down to writing some code. Assume the current task is to implement the features defined in configuration from the example provided in previous parts.
+There could be two major features: `serve-static` and `session` management.
+Let's take a look at the possible project structure in this case:
 
+```
+.
+├─── features
+│    ├─── session
+│    │    ├─── session.js
+│    │    └─── index.js
+│    ├─── serve-static
+│    │    ├─── data
+│    │    │    ├─── favicon.ico
+│    │    │    └─── index.html
+│    │    ├─── serve-static.js
+│    │    └─── index.js
+├─── app.js
+├─── config.yml
+└─── package.json
+```
+
+Serving static content will be left for an exercise. Probably this feature will become a part of a framework in the future. 
+So as an example we will implement a session management functionality. Or at least a prototype of it, located in session.js file. 
+This is by no means a production-ready code, provided just for the showcase
+
+When it comes to request handling, Starty will route the requests to the corresponding functions in your code. 
+The simplest request handler function could take no parameters, but must return an object which either contains a *payload*, 
+or a field named by an input of a client connection according to the configuration.
+
+```javascript
+'use strict'
+const crypto = require('crypto');
+
+// this version returns a response immediately
+function newSession(){
+    return {
+        payload: crypto.randomUUID()
+    }
+}
+
+```
+
+Also, it is possible to set the response headers:
+
+```javascript
+'use strict'
+const crypto = require('crypto');
+
+// this version returns a response immediately
+function newSession(){
+    
+    let session = {
+        token: crypto.randomUUID(),  // generate new token
+        validUntil: new Date + 7     // which is valid for a week
+    }
+    
+    let sessionDetails = {};
+    
+    sessionDetails.response = {};
+    sessionDetails.response.headers = {
+        'content-type': 'application/json'
+    };   
+    
+    sessionDetails.payload = JSON.stringify(session);
+    
+    return sessionDetails;
+}
+
+// share your code with Starty
+module.exports = {
+    newSession
+}
+```
+In this case Starty will take the headers from the *response* property and write it with the *payload* into the response message.
+But the simplest examples could not always be useful. In fact Starty provides a message envelope object
+as a parameter for every handler function. The message envelope can have several properties:
+- msgId - a unique identifier of the incoming message, provided always
+- request - an object which contains request *headers* and *query* parameters. These properties can be empty when none of them received
+- payload - the request body which could be empty in case of handling a GET request, for example
+
+You can use a simple logging feature provided by the framework. 
+It helps to track events happened in user defined code in connection with the name of the code block as an event source and with the timestamp.
+So, here is a bit more complex example with some logging usage:
+```javascript
+const {loggerBuilder, logLevels} = require('starty');
+const log = loggerBuilder()
+                        .name('session service')
+                        .level(logLevels.INFO)
+                    .build();
+
+/**
+ *
+ * @param   {{  msgId:    string,
+ *              request:  {headers: {object}, query: {object}}, 
+ *              response: {object}, 
+ *              payload:  {object}
+ *          }} msg
+ *          
+ * @returns {{  msgId:    string, 
+ *              request:  {headers: {object}, query: {object}}, 
+ *              response: {headers:{object}}, 
+ *              payload:  {object}
+ *          }} msg
+ */
+function newSession(msg){
+
+    if (msg.request.query !== undefined){
+     let queryStr = JSON.stringify(msg.request.query);
+     
+     // you can use simple logger provided by the framework
+     log.info(`query params:  ${queryStr}`);
+    }
+    
+    let session = {
+        token: crypto.randomUUID(),  // generate new token
+        validUntil: new Date + 7     // which is valid for a week
+    }
+    
+    // setting the response headers
+    msg.response.headers = {
+        'content-type': 'application/json'
+    };   
+    
+    // provide the output data
+    msg.payload = JSON.stringify(session);
+    
+    return msg;
+}
+
+// share your code with Starty
+module.exports = {
+    newSession
+}
+
+```
+
+An example output of the logger which could be found in console when a request with query params arrived:
+> [2022-06-24T05:57:24.661Z] [INFO] [session service] query params:  {"foo":"bar","fizz":"buzz"}
+
+The next and probably the last example will be a function which initiates the external resource call.
+Let's imagine we need the session controller to get the new token from an external API:
+
+```javascript
+'use strict'
+
+/**
+ *
+ * @param   {{  msgId:    string,
+ *              request:  {headers: {object}, query: {object}}, 
+ *              response: {object}, 
+ *              payload:  {object}
+ *          }} msg
+ *
+ * @returns {{  msgId:    string, 
+ *              request:  {headers: {object}}, 
+ *              response: {headers:{object}}, 
+ *              authApiRequest:  {object}
+ *          }} msg
+ */
+function newSession(msg){
+    // just for the illustration purpose
+    // let's say the client provided some parameters in query
+    let authParams = msg.request.query;
+      
+    // fill a request to external service instead
+    // assuming all needed information was provided 
+    // in request query params
+    msg.authApiRequest = {
+     ...(authParams)
+    };
+   
+    // we do not plan to return a result here
+    // so we remove the 'payload' property 
+    // from the outgoing message
+    delete msg.payload;
+    
+    // setting proper headers for external API request
+    // replacing originally received headers
+    msg.request = {
+     headers: {
+      'content-type': 'application/json'
+     }
+    };
+   
+    return msg;
+}
+```
+In this case, the outgoing message will be routed to the external resource
+according to the property name which corresponds to the input name of the client connections
+defined in the configuration file.
+
+After the receiving any results from the external resource Starty will forward them 
+to the corresponding handler function in same manner. 
+The result of the call will be written into the *payload* property of the message.
+The message will then be provided to the handler function which deals with *success* or *fail* results of the call.
+
+The handler functions are written in same style with same signatures, so we left this part of the work as an exercise.
 
 
 ## Example project:
+
+The example project which uses Starty for demonstration purposes could be found here:
+
 https://github.com/spacesoldier/messageBridgeServicePrototype
 
 
 ## Version history
-0.1.xx - the very first attempt, usable for building simple REST API which could call external API
+0.1.2 - added the support for the query parameters, fixed some bugs and finished the idea of separation the request handling by the framework and message processing by the user defined code
+
+0.1.1 - the very first draft, usable for building simple REST API which could call external API with GET and POST methods
 
 ## Contacts
 I appreciate any feedback, so please feel free to write me an email: 

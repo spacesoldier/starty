@@ -21,7 +21,7 @@ function log(loggerName, loggingLevel='info', loggingSink){
     const logMsgTemplate = `[${dateTimeMs()}] `;
 
     function logMessage(msgLevel, msg){
-        return logMsgTemplate + `[${msgLevel}] [${loggerName}] ${msg}`;
+        return logMsgTemplate + `[${logLevel}] [${logName}] ${msg}`;
     }
 
     /**

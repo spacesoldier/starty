@@ -3,34 +3,68 @@
 const crypto = require('crypto');
 const {loggerBuilder, logLevels} = require("../../../logging");
 const {messageBuilder} = require('./message');
+const {requestsCacheBuilder} = require('./requests-cache');
+const {unpackRequest, clearUrlFromQuery, checkAggregateEnvelope} = require('./prepare');
 
-function fail(statusCode, response, error, contentType='application/json'){
-    response.statusCode = statusCode;
-    if (!('content-type' in response.getHeaders())){
-        response.setHeader('content-type', contentType);
+const requestsCache = requestsCacheBuilder().build();
+
+const finishRequestLogger = loggerBuilder()
+                                        .name('output')
+                                        .level(logLevels.INFO)
+                                    .build();
+
+function finishRequest(envelope){
+
+    let origRequest = requestsCache.pop(envelope.msgId);
+    if (origRequest !== undefined){
+        let {error, message, receiver} = origRequest;
+
+        if (error !== undefined){
+            finishRequestLogger.error(`Request ${envelope.msgId} couldn't be found in cache. I may be finished before.`);
+        } else {
+            let {response} = message;
+            response.statusCode = envelope.response.statusCode;
+
+            for (let header in envelope.headers){
+                response.setHeader(header, envelope.headers[header]);
+            }
+
+            response.write(envelope.payload);
+            response.end();
+
+            let status = envelope.response.statusCode == 200 ? 'OK' : 'ERROR';
+            finishRequestLogger.info(`[${receiver}] Request ${envelope.msgId} completed with status ${status}`);
+        }
+
     }
-
-    response.write(JSON.stringify(error));
-    response.end();
 
 }
 
-const finishRequestLogger = loggerBuilder()
-                                    .name('OK')
-                                    .level(logLevels.INFO)
-                                .build();
+function fail(statusCode, envelope, error){
+    envelope.response.statusCode = statusCode;
 
-function ok(message){
-    let {response, payload} = message;
-    response.statusCode = 200;
-    if (!('content-type' in response.getHeaders())){
-        response.setHeader('Content-Type', 'text/plain');
+    if (envelope.response.headers === undefined){
+        envelope.response.headers = {};
     }
 
-    response.write(payload);
-    response.end();
+    let rsHeaders = envelope.response.headers;
+    if (!('content-type' in rsHeaders)){
+        rsHeaders['content-type'] = 'application/json';
+    }
 
-    finishRequestLogger.info(`Request ${message.msgId} completed`);
+    envelope.payload = JSON.stringify(error);
+
+    finishRequest(envelope);
+}
+
+
+
+function ok(envelope){
+
+    envelope.response.statusCode = 200;
+
+    finishRequest(envelope);
+
 }
 
 /**
@@ -52,8 +86,9 @@ function processMessage(messageHandler, internals){
             let {payload} = callResult;
 
             if (payload !== undefined){
+                callResult = checkAggregateEnvelope(callResult, message);
                 // finalize response here
-                ok(message);
+                ok(callResult);
             } else {
                 // find an intersection between the message fields
                 // and internal modules names
@@ -62,8 +97,12 @@ function processMessage(messageHandler, internals){
                 //route to internal services
                 for (let sinkName of receiverNames){
                     // very questionable, but it is very likely to use payload as a one known field for data
-                    let callPayload = callResult[sinkName];
-                    callResult.payload = callPayload;
+                    // before giving it into a custom function call
+                    callResult.payload = callResult[sinkName];
+                    // remove custom field
+                    delete callResult[sinkName];
+
+                    // TODO: implement the multiple subscribers to one source of messages
                     let {call} = internalModules[sinkName];
                     if (call !== undefined && call instanceof Function){
                         call(callResult);
@@ -72,7 +111,7 @@ function processMessage(messageHandler, internals){
             }
 
         } catch (ex){
-            fail(500, message.response, ex);
+            fail(500, message, ex);
         }
     }
 
@@ -80,6 +119,7 @@ function processMessage(messageHandler, internals){
         process
     }
 }
+
 
 /**
  *
@@ -92,9 +132,9 @@ function routedRequestHandler(name, routerFunction, internalSinks){
     const internals = internalSinks;
 
     const log = loggerBuilder()
-                        .name(handlerName)
-                        .level(logLevels.INFO)
-                    .build();
+                            .name(handlerName)
+                            .level(logLevels.INFO)
+                        .build();
 
     /**
      * Handles an incoming API request.
@@ -122,20 +162,28 @@ function routedRequestHandler(name, routerFunction, internalSinks){
 
             log.info(`Received ${method} request ${requestId} to ${url}`);
 
-            let {error, handler} = findRoute(url, method);
+            let urlWithoutQuery = clearUrlFromQuery(url);
+
+            let {error, handler} = findRoute(urlWithoutQuery, method);
 
             if (error !== undefined){
                 fail(404, rs, error);
                 log.info(`Request ${requestId} failed: ${error}`);
             } else {
-                let msg = messageBuilder()
-                                    .msgId(requestId)
-                                    .request(rq)
-                                    .response(rs)
-                                    .payload(requestBody)
-                                .build();
+                let originalRequest = messageBuilder()
+                                        .msgId(requestId)
+                                        .request(rq)
+                                        .response(rs)
+                                        .payload(requestBody)
+                                    .build();
 
-                processMessage(handler, internals).process(msg);
+                requestsCache.put(requestId, originalRequest, handlerName);
+                let requestEnvelope = messageBuilder()
+                                            .msgId(requestId)
+                                            .request(unpackRequest(rq))
+                                            .payload(requestBody)
+                                        .build();
+                processMessage(handler, internals).process(requestEnvelope);
 
             }
 

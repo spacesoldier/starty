@@ -64,10 +64,22 @@ function doPost(url, options, onSuccess, onFail, payload){
 
 function doPut(url, options, onSuccess, onFail, payload){
     options = checkHttpOptions(options, 'PUT');
+    let req = performHttpRequest(url, options, onSuccess, onFail);
+    req.on('error', err => {
+        onFail(err);
+    });
+    req.write(payload);
+    req.end();
 }
 
 function doDelete(url, options, onSuccess, onFail, payload){
     options = checkHttpOptions(options, 'DELETE');
+    let req = performHttpRequest(url, options, onSuccess, onFail);
+    req.on('error', err => {
+        onFail(err);
+    });
+    req.write(payload);
+    req.end();
 }
 
 const httpMethods = {

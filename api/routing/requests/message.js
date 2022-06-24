@@ -3,8 +3,8 @@
 /**
  *
  * @param {string} id
- * @param {IncomingMessage} req
- * @param {ServerResponse} res
+ * @param {IncomingMessage|object} req
+ * @param {ServerResponse|object} res
  * @param data
  * @returns {{request, payload, response, msgId}}
  * @constructor
@@ -30,7 +30,7 @@ function messageBuilder(){
     let req;
     /**
      *
-     * @param {IncomingMessage} rq
+     * @param {IncomingMessage|{headers: IncomingHttpHeaders, query: ParsedUrlQuery}} rq
      * @returns this
      */
     function request(rq){
@@ -79,7 +79,12 @@ function messageBuilder(){
      * @returns {{request, payload, response, msgId}}
      */
     function build(){
-        return new Message(requestId, req, res, data);
+        return new Message(
+                            requestId,
+                            req,
+                            res ?? {},
+                            data
+                        );
     }
 
     return {

@@ -11,7 +11,7 @@ A lightweight framework which helps to build modular and configurable Node.js ap
 ## Getting started
 The process of application development with Starty consists of several steps which could be done in any sequence:
 - [writing an application configuration](#write-conf) in Yaml format
-- [writing the code](#write-app) which implements your application requirements, feature by feature
+- [writing the code](#Writing-the-application-logic) which implements your application requirements, feature by feature
 - let Starty discover your features at runtime and share them with the world according to the configuration
 
 This scenario may look quite familiar for the programmers who may be new to Node.js based development, but have some previous experience with Java and one of the most popular Java frameworks - Spring Boot.
@@ -175,7 +175,7 @@ clients:
 
 ```
 &nbsp;
-### <a href="#write-app"> Writing the application logic</a>
+### Writing the application logic
 When all the preparations are done it's time to write some application logic.
 In previous sections we described a lot of stuff about the configuration and binding the connections 
 to the functions which will handle the requests and prepare the requests for external API.

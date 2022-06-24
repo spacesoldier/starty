@@ -10,7 +10,7 @@ A lightweight framework which helps to build modular and configurable Node.js ap
 
 ## Getting started
 The process of application development with Starty consists of several steps which could be done in any sequence:
-- [writing an application configuration](#write-conf) in Yaml format
+- [writing an application configuration](#Writing-the-configuration) in Yaml format
 - [writing the code](#Writing-the-application-logic) which implements your application requirements, feature by feature
 - let Starty discover your features at runtime and share them with the world according to the configuration
 
@@ -21,7 +21,7 @@ This scenario may look quite familiar for the programmers who may be new to Node
 npm i starty
 ```
 
-### <a href="#write-conf"> Writing the configuration </a>
+### Writing the configuration
 You may already have a vision of what do you plan to build. And some details, for example, a way of integration for your application with others in your product's landscape. Or it could be an early bird which acts as a prototype of a whole system. Or you just need to write a microservice with a limited set of a functions.
 
 At the moment, Starty can help you to build a REST API and integrate with any other REST API.

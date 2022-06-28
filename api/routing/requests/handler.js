@@ -29,8 +29,15 @@ function finishRequest(envelope){
                 response.setHeader(header, envelope.headers[header]);
             }
 
-            response.write(envelope.payload);
-            response.end();
+            try{
+                response.write(envelope.payload);
+                response.end();
+            } catch (ex){
+                requestsCache.put(envelope.msgId, origRequest.message, `error_${envelope.msgId}`);
+                finishRequestLogger.error(`Error writing the response: ${ex}`);
+                fail(500, envelope, ex);
+            }
+
 
             let status = envelope.response.statusCode == 200 ? 'OK' : 'ERROR';
             finishRequestLogger.info(`[${receiver}] Request ${envelope.msgId} completed with status ${status}`);
@@ -64,6 +71,9 @@ function ok(envelope){
     if (envelope.response.statusCode === undefined){
         envelope.response.statusCode = 200;
     }
+
+    // TODO: detect if it is needed to convert msg.payload to string
+    // and set the content-type header properly
 
     finishRequest(envelope);
 
@@ -125,18 +135,18 @@ function processMessage(messageHandler, internals){
 
 function prepareEnvelope(requestId, rq, rs, requestBody, handlerName) {
     let originalRequest = messageBuilder()
-        .msgId(requestId)
-        .request(rq)
-        .response(rs)
-        .payload(requestBody)
-        .build();
+                                            .msgId(requestId)
+                                            .request(rq)
+                                            .response(rs)
+                                            .payload(requestBody)
+                                    .build();
 
     requestsCache.put(requestId, originalRequest, handlerName);
     let requestEnvelope = messageBuilder()
-        .msgId(requestId)
-        .request(unpackRequest(rq))
-        .payload(requestBody)
-        .build();
+                                            .msgId(requestId)
+                                            .request(unpackRequest(rq))
+                                            .payload(requestBody)
+                                        .build();
     return requestEnvelope;
 }
 

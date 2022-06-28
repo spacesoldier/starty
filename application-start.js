@@ -2,7 +2,12 @@
 
 const {startyGreeting} = require('./about');
 const {loggerBuilder,logLevels} = require('./logging');
-const {readAppConfig, parseConfig} = require('./configuration');
+const {
+        readAppConfig,
+        parseConfig,
+        getEnvVars,
+        resolveEnvVars
+                    } = require('./configuration');
 const {
         extractEndpoints,
         initClients,
@@ -44,9 +49,11 @@ function applicationStart(configPath) {
     startyGreeting();
 
     let appState = StateConstructor();
-    appState.incrementState(                             loadFeatures                                        )
-        .then(         state => state.incrementState(    initFeatures                                       ))
+    appState.incrementState(                             getEnvVars                                          )
+        .then(         state => state.incrementState(    loadFeatures                                       ))
+        .then(state => state.incrementState(    initFeatures                                       ))
         .then(state => state.incrementState(    readAppConfig, {confPath: configPath}        ))
+        .then(state => state.incrementState(    resolveEnvVars                                     ))
         .then(state => state.incrementState(    parseConfig                                        ))
         .then(state => state.incrementState(    extractEndpoints                                   ))
         .then(state => state.incrementState(    initClients                                        ))

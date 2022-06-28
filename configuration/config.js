@@ -34,7 +34,7 @@ async function readAppConfig(inputs){
 
     try {
         const data = await fs.promises.readFile(confPath);
-        return {confContents: Buffer.from(data)};
+        return {confContents: Buffer.from(data).toString()};
     } catch (err) {
         return {error: err};
     }

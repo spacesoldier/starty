@@ -48,7 +48,8 @@ clients:
 &nbsp;
 #### Defining servers
 Next, let's configure the server. We need to set the `port` number to listen, `hosts` or IP addresses from where to receive the requests and the `protocol` it supports. Also, it might be useful to set the name of the server.
-When the server is defined, we can set up its endpoints. 
+When the server is defined, we can set up its endpoints.
+
 ```yaml
 # a name of the server inside the application
 my-http-server:
@@ -115,6 +116,28 @@ auth-api:   # client name
       success: "onAuthSuccess"
       fail: "onAuthError"
 ```
+&nbsp;
+#### Environment variables
+
+You can easily pass the environment variables into the application configuration. 
+To prevent any errors, the default values should be set. The syntax looks like this:
+```
+   ${ENVIRONMENT_VARIABLE:default value}
+```
+
+Let's look at an example of the server configuration. 
+Assume the port number to listen and an IP address to accept the requests from could be set using the environment variables.
+So the server configuration will look like this:
+```yaml
+# a name of the server inside the application
+my-http-server:
+  hosts:
+    - ${ACCEPT_HOST:"127.0.0.1"}
+  port: ${PORT:8080}
+  protocol: "http"
+  endpoints:
+```
+
 &nbsp;
 #### Bringing it all together
 

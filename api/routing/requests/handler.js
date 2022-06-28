@@ -20,7 +20,7 @@ function finishRequest(envelope){
         let {error, message, receiver} = origRequest;
 
         if (error !== undefined){
-            finishRequestLogger.error(`Request ${envelope.msgId} couldn't be found in cache. I may be finished before.`);
+            finishRequestLogger.error(`Request ${envelope.msgId} couldn't be found in cache. It may be finished before.`);
         } else {
             let {response} = message;
             response.statusCode = envelope.response.statusCode;
@@ -123,6 +123,23 @@ function processMessage(messageHandler, internals){
 }
 
 
+function prepareEnvelope(requestId, rq, rs, requestBody, handlerName) {
+    let originalRequest = messageBuilder()
+        .msgId(requestId)
+        .request(rq)
+        .response(rs)
+        .payload(requestBody)
+        .build();
+
+    requestsCache.put(requestId, originalRequest, handlerName);
+    let requestEnvelope = messageBuilder()
+        .msgId(requestId)
+        .request(unpackRequest(rq))
+        .payload(requestBody)
+        .build();
+    return requestEnvelope;
+}
+
 /**
  *
  * @param {function} routerFunction
@@ -152,11 +169,12 @@ function routedRequestHandler(name, routerFunction, internalSinks){
 
         const requestId = crypto.randomUUID();
 
-        let {url, method, headers} = rq;
+        let {url, method} = rq;
 
         rq.on('error', err => {
-            log.error(`Received ${method} request ${requestId} to ${url}`);
-            fail(500, rs, err);
+            log.error(`Error when processing ${method} request ${requestId} to ${url}`);
+            let failEnvelope = prepareEnvelope(requestId, rq, rs, "", handlerName);
+            fail(500, failEnvelope, err);
         }).on('data', chunk => {
             requestBodyChunks.push(chunk);
         }).on('end', () => {
@@ -169,22 +187,11 @@ function routedRequestHandler(name, routerFunction, internalSinks){
             let {error, handler} = findRoute(urlWithoutQuery, method);
 
             if (error !== undefined){
-                fail(404, rs, error);
+                let failEnvelope = prepareEnvelope(requestId, rq, rs, requestBody, handlerName);
+                fail(404, failEnvelope, error);
                 log.info(`Request ${requestId} failed: ${error}`);
             } else {
-                let originalRequest = messageBuilder()
-                                        .msgId(requestId)
-                                        .request(rq)
-                                        .response(rs)
-                                        .payload(requestBody)
-                                    .build();
-
-                requestsCache.put(requestId, originalRequest, handlerName);
-                let requestEnvelope = messageBuilder()
-                                            .msgId(requestId)
-                                            .request(unpackRequest(rq))
-                                            .payload(requestBody)
-                                        .build();
+                let requestEnvelope = prepareEnvelope(requestId, rq, rs, requestBody, handlerName);
                 processMessage(handler, internals).process(requestEnvelope);
 
             }

@@ -485,6 +485,8 @@ https://github.com/spacesoldier/messageBridgeServicePrototype
 
 ## Version history
 
+0.1.6 - fixed an error handling case when *msg.payload* is not a string (will improve later)
+
 0.1.5 - fixed a bug when request processing fails at the beginning
 
 0.1.4 - environment variables support in application config

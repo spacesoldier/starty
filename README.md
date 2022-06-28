@@ -484,6 +484,8 @@ https://github.com/spacesoldier/messageBridgeServicePrototype
 
 
 ## Version history
+0.1.4 - environment variables support in application config
+
 0.1.3 - returning status code 200 automatically only in case when it was not provided by user-defined code
 
 0.1.2 - added the support for the query parameters, fixed some bugs and finished the idea of separation the request handling by the framework and message processing by the user defined code

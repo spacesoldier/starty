@@ -87,10 +87,12 @@ function envVarUsageBuilder(){
 }
 
 function extractEnvValueDefinition(envValFromConf){
-    let envValParts = envValFromConf.split(':');
+    let envName = envValFromConf.match(/(?<=\${)\w+(?=:)/g)[0];
+    let envVal = envValFromConf.split(/(?<=\${)\w+(?=:)/g)[1]
+                                .match(/(?<=:).*(?=})/g)[0];
     let envValDef = envVarUsageBuilder()
-                                .name(envValParts[0].slice(2))
-                                .defaultValue(envValParts[1].slice(0,-1))
+                                .name(envName)
+                                .defaultValue(envVal)
                             .build();
     return envValDef;
 }

@@ -11,6 +11,7 @@ const {
 const {
         extractEndpoints,
         initClients,
+        configureInternals,
         initRouters,
         initServers,
         startServices
@@ -49,14 +50,15 @@ function applicationStart(configPath) {
     startyGreeting();
 
     let appState = StateConstructor();
-    appState.incrementState(                             getEnvVars                                          )
-        .then(         state => state.incrementState(    loadFeatures                                       ))
+    appState.incrementState(                             getEnvVars                                )
+        .then(state => state.incrementState(    loadFeatures                                       ))
         .then(state => state.incrementState(    initFeatures                                       ))
         .then(state => state.incrementState(    readAppConfig, {confPath: configPath}        ))
         .then(state => state.incrementState(    resolveEnvVars                                     ))
         .then(state => state.incrementState(    parseConfig                                        ))
         .then(state => state.incrementState(    extractEndpoints                                   ))
         .then(state => state.incrementState(    initClients                                        ))
+        .then(state => state.incrementState(    configureInternals                                 ))
         .then(state => state.incrementState(    initRouters                                        ))
         .then(state => state.incrementState(    initServers                                        ))
         .then(state => state.incrementState(    startServices                                      ))

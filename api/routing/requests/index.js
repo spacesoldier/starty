@@ -1,8 +1,8 @@
 'use strict'
 
-const {routedRequestHandler, processMessage} = require('./handler');
+const {routedRequestHandler, messageRouter} = require('./handler');
 
 module.exports = {
     routedRequestHandler,
-    processMessage
+    messageRouter
 }

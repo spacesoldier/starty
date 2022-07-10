@@ -101,7 +101,7 @@ At the moment, the only one type of clients available.
 It is *web* client which can send requests using *http* or *https* protocols.
 
 Next, it's a good moment to think about the way the client may perform its operations.
-Probably it could be useful to imagine it has several inputs dedicated to the `methods` used for calling an external API endpoint.
+Probably it could be useful to imagine it has several `input`s dedicated to the `methods` used for calling an external API endpoint.
 And we also need to know what to do when the external API call ended with `success` or with `fail` result by providing 
 the function names which handle these sorts of result. Thus, an example of a client may look  like following:
 ```yaml
@@ -116,6 +116,25 @@ auth-api:   # client name
       success: "onAuthSuccess"
       fail: "onAuthError"
 ```
+&nbsp;
+#### Internal logic declaration
+Let's imagine you plan to implement some logic which is not directly connected with the REST API implementation.
+It could be some post-processing or data aggregation stage.
+On the contrary, it can be a very important part of the implementation of the service, its core, separated into its own logical layer.
+
+Starty allows to declare the internal parts of the logic in same style as it is done for the external resource clients.
+Even in more simple manner. To be able to route the messages to dedicated function `call`s
+it needs to know an alias or the `input` name of that function.
+
+As an example we could imagine a function which counts how many users are online:
+
+```yaml
+internals:
+  metrics:
+    input: "metricsCounter"
+    call: "countUsersOnline"
+```
+
 &nbsp;
 #### Environment variables
 
@@ -153,8 +172,8 @@ servers:
   # a name of the server inside the application
   my-http-server:
     hosts:
-      - "127.0.0.1"
-    port: 8080
+      - ${ACCEPT_HOST:"127.0.0.1"}
+    port: ${PORT:8080}
     protocol: "http"
     endpoints:
 
@@ -186,8 +205,8 @@ clients:
   # a client which purpose is to call an external API
   auth-api:   # client name
     type: "web"
-    url: "https://authorization-service/auth"
-    port: 8080
+    url: ${AUTH_SRV_HOST:"https://authorization-service/auth"}
+    port: ${AUTH_SRV_PORT:8080}
     methods:
       post:
         input: "authApiRequest"
@@ -463,6 +482,10 @@ function newSession(msg){
    
     return msg;
 }
+
+module.exports = {
+                    newSession
+                  }
 ```
 In this case, the outgoing message will be routed to the external resource
 according to the property name which corresponds to the input name of the client connections
@@ -473,17 +496,93 @@ to the corresponding handler function in same manner.
 The result of the call will be written into the *payload* property of the message.
 The message will then be provided to the handler function which deals with *success* or *fail* results of the call.
 
-The handler functions are written in same style with same signatures, so we left this part of the work as an exercise.
+The handler functions are written in same style with same signatures.
+According to current the example case, let's take a look at the authorization results handler.
+Assume the new session opened successfully and needed details are provided in `msg.payload` field.
+At this point we could decide to provide these details to user, but also increase the number of users online.
+This decision may touch two zones of responsibility: one for receiving the details about new sessions and another for dealing with user counting.
 
+```javascript
+'use strict'
+const {loggerBuilder, logLevels} = require('starty');
+const log = loggerBuilder()
+                        .name('session service')
+                        .level(logLevels.INFO)
+                  .build();
+/**
+ *
+ * @param   {{  msgId:    string,
+ *              request:  {headers: {object}, query: {object}}, 
+ *              response: {object}, 
+ *              payload:  {object}
+ *          }} msg
+ *
+ * @returns {{  msgId:    string, 
+ *              request:  {headers: {object}}, 
+ *              response: {headers:{object}}, 
+ *              metricsCounter:  {object}
+ *          }} msg
+ */
+function onAuthSuccess(msg){
+    
+    // let's forward the message to the users counting function
+    msg.metricsCounter = msg.payload;
+    delete msg.payload;
+    
+    return msg;
+}
 
+// do not try this at home
+// please :)
+let usersCount = 0;
+
+/**
+ *
+ * @param   {{  msgId:    string,
+ *              request:  {headers: {object}, query: {object}}, 
+ *              response: {object}, 
+ *              payload:  {object}
+ *          }} msg
+ *
+ * @returns {{  msgId:    string, 
+ *              request:  {headers: {object}}, 
+ *              response: {headers:{object}}, 
+ *              payload:  {object}
+ *          }} msg
+ */
+function countUsersOnline(msg){
+    
+    log.info(`hey, one more user online!`);
+    
+    usersCount += 1;
+    
+    return msg;
+}
+
+module.exports = {
+                     onAuthSuccess,
+                     countUsersOnline
+                 }
+
+```
+
+After receiving a result, the message will be routed to users counter and then it will be routed back to the user side.
+At the moment, Starty allows to build only consecutive call chains.
+This definitely will be changed and improved in next versions of the framework
+
+The authorization error response handler will be left for an exercise to the curious reader
+
+&nbsp;
 ## Example project:
 
 The example project which uses Starty for demonstration purposes could be found here:
-
+(the full demonstration example coming soon, so it's just an old version)
 https://github.com/spacesoldier/messageBridgeServicePrototype
 
 
 ## Version history
+
+0.1.8 - implemented internal logic declaration as a bits of code which could be used as a separate logic level
 
 0.1.7 - enable setting URLs as environment variables default values in config.yml
 

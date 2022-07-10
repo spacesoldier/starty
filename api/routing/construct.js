@@ -1,7 +1,7 @@
 const {loggerBuilder, logLevels} = require("../../logging");
 
 const {routerBuilder} = require('./router');
-const {routedRequestHandler,processMessage} = require('./requests');
+const {routedRequestHandler,messageRouter} = require('./requests');
 
 const log = loggerBuilder()
                     .name('router')
@@ -86,18 +86,30 @@ function decorateClientsHandlers(internalClients) {
             getSuccessCall !== undefined && getSuccessCall instanceof Function
             && setSuccessCall !== undefined && setSuccessCall instanceof Function
         ) {
-            setSuccessCall(processMessage(getSuccessCall(), internalClients).process);
+            setSuccessCall(messageRouter.processMessage(getSuccessCall()).process);
         }
 
         if (
             getFailCall !== undefined && getFailCall instanceof Function
             && setFailCall !== undefined && setFailCall instanceof Function
         ) {
-            setFailCall(processMessage(getFailCall(), internalClients).process);
+            setFailCall(messageRouter.processMessage(getFailCall()).process);
         }
     }
 
     return internalClients;
+}
+
+function decorateInternalLogicUnits(internals) {
+    let decoratedInternals = {}
+    for (let internalName in internals) {
+        let {alias, getCall} = internals[internalName];
+        let routedCall = messageRouter.processMessage(getCall()).process;
+        decoratedInternals[alias] = {
+                                        call: routedCall
+                                    };
+    }
+    return decoratedInternals;
 }
 
 function initRouters(inputs){
@@ -105,14 +117,21 @@ function initRouters(inputs){
     let {
         featureStore,
         externalClients,
-        serverEndpoints
+        serverEndpoints,
+        internals
     } = inputs;
 
-    let internalSinks = {
-        ...externalClients
+    externalClients = decorateClientsHandlers(externalClients);
+    let internalUnits = decorateInternalLogicUnits(internals);
+
+    let internalSources = {
+        ...externalClients,
+        ...internalUnits
     }
 
-    internalSinks = decorateClientsHandlers(internalSinks);
+    for (let internalName in internalSources){
+        messageRouter.addInternal(internalName, internalSources[internalName]);
+    }
 
     if (featureStore !== undefined && serverEndpoints !== undefined){
         let routerDefs = {};
@@ -125,8 +144,7 @@ function initRouters(inputs){
                 });
                 requestHandlers[serverName] = routedRequestHandler(
                                                     serverName,
-                                                    routerDefs[serverName].findRoute,
-                                                    internalSinks
+                                                    routerDefs[serverName].findRoute
                                                 );
         }
 

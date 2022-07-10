@@ -79,58 +79,77 @@ function ok(envelope){
 
 }
 
-/**
- *
- * @param {function} messageHandler
- */
-function processMessage(messageHandler, internals){
-
-    const handler = messageHandler;
-    const internalModules = internals;
+function messageRouterImpl(){
+    const internalModules = {};
 
     /**
      *
-     * @param {{request, payload, response, msgId}} message
+     * @param {string} name
+     * @param {Function} call
      */
-    function process(message){
-        try {
-            let callResult = handler(message);
-            let {payload} = callResult;
+    function addInternal(name, call){
+        internalModules[name] = call;
+    }
 
-            if (payload !== undefined){
-                callResult = checkAggregateEnvelope(callResult, message);
-                // finalize response here
-                ok(callResult);
-            } else {
-                // find an intersection between the message fields
-                // and internal modules names
-                let receiverNames = Object.keys(callResult).filter(key => Object.keys(internalModules).includes(key));
+    /**
+     *
+     * @param {function} messageHandler
+     */
+    function processMessage(messageHandler){
 
-                //route to internal services
-                for (let sinkName of receiverNames){
-                    // very questionable, but it is very likely to use payload as a one known field for data
-                    // before giving it into a custom function call
-                    callResult.payload = callResult[sinkName];
-                    // remove custom field
-                    delete callResult[sinkName];
+        const handler = messageHandler;
 
-                    // TODO: implement the multiple subscribers to one source of messages
-                    let {call} = internalModules[sinkName];
-                    if (call !== undefined && call instanceof Function){
-                        call(callResult);
+        /**
+         *
+         * @param {{request, payload, response, msgId}} message
+         */
+        function process(message){
+            try {
+                let callResult = handler(message);
+                let {payload} = callResult;
+
+                if (payload !== undefined){
+                    callResult = checkAggregateEnvelope(callResult, message);
+                    // finalize response here
+                    ok(callResult);
+                } else {
+                    // find an intersection between the message fields
+                    // and internal modules names
+                    let receiverNames = Object.keys(callResult).filter(key => Object.keys(internalModules).includes(key));
+
+                    //route to internal services
+                    for (let sinkName of receiverNames){
+                        // very questionable, but it is very likely to use payload as a one known field for data
+                        // before giving it into a custom function call
+                        callResult.payload = callResult[sinkName];
+                        // remove custom field
+                        delete callResult[sinkName];
+
+                        // TODO: implement the multiple subscribers to one source of messages
+                        let {call} = internalModules[sinkName];
+                        if (call !== undefined && call instanceof Function){
+                            call(callResult);
+                        }
                     }
                 }
-            }
 
-        } catch (ex){
-            fail(500, message, ex);
+            } catch (ex){
+                fail(500, message, ex);
+            }
+        }
+
+        return {
+            process,
         }
     }
 
     return {
-        process
+        processMessage,
+        addInternal
     }
 }
+
+const messageRouter = messageRouterImpl();
 
 
 function prepareEnvelope(requestId, rq, rs, requestBody, handlerName) {
@@ -154,11 +173,10 @@ function prepareEnvelope(requestId, rq, rs, requestBody, handlerName) {
  *
  * @param {function} routerFunction
  */
-function routedRequestHandler(name, routerFunction, internalSinks){
+function routedRequestHandler(name, routerFunction){
 
     const handlerName = name;
     const findRoute = routerFunction;
-    const internals = internalSinks;
 
     const log = loggerBuilder()
                             .name(handlerName)
@@ -202,8 +220,7 @@ function routedRequestHandler(name, routerFunction, internalSinks){
                 log.info(`Request ${requestId} failed: ${error}`);
             } else {
                 let requestEnvelope = prepareEnvelope(requestId, rq, rs, requestBody, handlerName);
-                processMessage(handler, internals).process(requestEnvelope);
-
+                messageRouter.processMessage(handler).process(requestEnvelope);
             }
 
         })
@@ -221,5 +238,5 @@ function routedRequestHandler(name, routerFunction, internalSinks){
 
 module.exports = {
     routedRequestHandler,
-    processMessage
+    messageRouter
 }

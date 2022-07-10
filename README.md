@@ -213,7 +213,10 @@ clients:
         success: "onAuthSuccess"
         fail: "onAuthError"
 
-
+internals:
+ metrics:
+  input: "metricsCounter"
+  call: "countUsersOnline"
 
 ```
 &nbsp;
@@ -579,8 +582,10 @@ The example project which uses Starty for demonstration purposes could be found 
 (the full demonstration example coming soon, so it's just an old version)
 https://github.com/spacesoldier/messageBridgeServicePrototype
 
-
+&nbsp;
 ## Version history
+
+0.1.9 - introducing scheduling the events [coming soon]
 
 0.1.8 - implemented internal logic declaration as a bits of code which could be used as a separate logic level
 

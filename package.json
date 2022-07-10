@@ -1,6 +1,6 @@
 {
   "name": "starty",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "a lightweight framework which helps building modular and configurable Node.js applications",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

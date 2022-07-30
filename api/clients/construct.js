@@ -32,13 +32,13 @@ function initClients(inputs){
                         let {url, port, methods} = clients[clientName];
                         let clientBuilder = clientImplementations[clientType];
                         for (let method in methods){
-                            let {input, success, fail} = methods[method];
+                            let {alias, success, fail} = methods[method];
 
                             let successHandler = featureStore.featureFunctions[success];
                             let failHandler = featureStore.featureFunctions[fail];
 
                             if (successHandler !== undefined){
-                                externalServiceClients[input] = clientBuilder
+                                externalServiceClients[alias] = clientBuilder
                                                                             .name(clientName)
                                                                             .method(method)
                                                                             .url(url)

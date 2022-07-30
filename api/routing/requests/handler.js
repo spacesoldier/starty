@@ -48,39 +48,75 @@ function finishRequest(envelope){
 }
 
 function fail(statusCode, envelope, error){
-    envelope.response.statusCode = statusCode;
+    if (envelope.response !== undefined){
+        envelope.response.statusCode = statusCode;
 
-    if (envelope.response.headers === undefined){
-        envelope.response.headers = {};
+        if (envelope.response.headers === undefined){
+            envelope.response.headers = {};
+        }
+
+        let rsHeaders = envelope.response.headers;
+        if (!('content-type' in rsHeaders)){
+            rsHeaders['content-type'] = 'application/json';
+        }
+
+        envelope.payload = JSON.stringify(error);
+
+        finishRequest(envelope);
     }
+    // when the response property is undefined then probably we have an envelope provided by an internal source
+    // thus there's no need to look for a response recipient outside
 
-    let rsHeaders = envelope.response.headers;
-    if (!('content-type' in rsHeaders)){
-        rsHeaders['content-type'] = 'application/json';
-    }
-
-    envelope.payload = JSON.stringify(error);
-
-    finishRequest(envelope);
+    //TODO: implement a default error sink for internal error handling
 }
 
 
 
 function ok(envelope){
 
-    if (envelope.response.statusCode === undefined){
-        envelope.response.statusCode = 200;
+    if (envelope.response !== undefined){
+        if (envelope.response.statusCode === undefined){
+            envelope.response.statusCode = 200;
+        }
+
+        // TODO: detect if it is needed to convert msg.payload to string
+        // and set the content-type header properly
+
+        finishRequest(envelope);
+
+    }
+    // when the response property is undefined then probably we have an envelope provided by an internal source
+    // thus there's no need to look for a response recipient outside
+}
+
+
+function flightRecorder(){
+
+    let orangeBox = {};
+
+    function logEvent(msg, call){
+        if (orangeBox[msg.msgId] == undefined){
+            orangeBox[msg.msgId] = [];
+        }
+        orangeBox[msg.msgId].push(call.name);
     }
 
-    // TODO: detect if it is needed to convert msg.payload to string
-    // and set the content-type header properly
-
-    finishRequest(envelope);
+    return {
+        orangeBox,
+        logEvent
+    }
 
 }
 
+const recorder = new flightRecorder();
+
 function messageRouterImpl(){
     const internalModules = {};
+
+    const log = loggerBuilder()
+                            .name(`internal router`)
+                            .level(logLevels.INFO)
+                        .build();
 
     /**
      *
@@ -105,32 +141,37 @@ function messageRouterImpl(){
          */
         function process(message){
             try {
+                recorder.logEvent(message, handler);
                 let callResult = handler(message);
-                let {payload} = callResult;
+                if (callResult !== undefined){
+                    let {payload} = callResult;
 
-                if (payload !== undefined){
-                    callResult = checkAggregateEnvelope(callResult, message);
-                    // finalize response here
-                    ok(callResult);
-                } else {
-                    // find an intersection between the message fields
-                    // and internal modules names
-                    let receiverNames = Object.keys(callResult).filter(key => Object.keys(internalModules).includes(key));
+                    if (payload !== undefined){
+                        callResult = checkAggregateEnvelope(callResult, message);
+                        // finalize response here
+                        ok(callResult);
+                    } else {
+                        // find an intersection between the message fields
+                        // and internal modules names
+                        let receiverNames = Object.keys(callResult).filter(key => Object.keys(internalModules).includes(key));
 
-                    //route to internal services
-                    for (let sinkName of receiverNames){
-                        // very questionable, but it is very likely to use payload as a one known field for data
-                        // before giving it into a custom function call
-                        callResult.payload = callResult[sinkName];
-                        // remove custom field
-                        delete callResult[sinkName];
+                        //route to internal services
+                        for (let sinkName of receiverNames){
+                            // very questionable, but it is very likely to use payload as a one known field for data
+                            // before giving it into a custom function call
+                            callResult.payload = callResult[sinkName];
+                            // remove custom field
+                            delete callResult[sinkName];
 
-                        // TODO: implement the multiple subscribers to one source of messages
-                        let {call} = internalModules[sinkName];
-                        if (call !== undefined && call instanceof Function){
-                            call(callResult);
+                            // TODO: implement the multiple subscribers to one source of messages
+                            let {call} = internalModules[sinkName];
+                            if (call !== undefined && call instanceof Function){
+                                call(callResult);
+                            }
                         }
                     }
+                } else {
+                    log.info(`non-routable call result`);
                 }
 
             } catch (ex){
@@ -224,8 +265,6 @@ function routedRequestHandler(name, routerFunction){
             }
 
         })
-
-
 
     }
 

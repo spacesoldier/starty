@@ -72,44 +72,21 @@ function initSingleRouter(routerDef){
     return newRouter.build();
 }
 
-
-function decorateClientsHandlers(internalClients) {
-    for (let clientName in internalClients) {
-        let {
-            getSuccessCall,
-            getFailCall,
-            setSuccessCall,
-            setFailCall
-        } = internalClients[clientName];
-
-        if (
-            getSuccessCall !== undefined && getSuccessCall instanceof Function
-            && setSuccessCall !== undefined && setSuccessCall instanceof Function
-        ) {
-            setSuccessCall(messageRouter.processMessage(getSuccessCall()).process);
-        }
-
-        if (
-            getFailCall !== undefined && getFailCall instanceof Function
-            && setFailCall !== undefined && setFailCall instanceof Function
-        ) {
-            setFailCall(messageRouter.processMessage(getFailCall()).process);
-        }
-    }
-
-    return internalClients;
+/**
+ *
+ * @param {Function} featureFunc
+ * @returns {process}
+ */
+function featureDecorator(featureFunc){
+    return messageRouter.processMessage(featureFunc).process;
 }
 
-function decorateInternalLogicUnits(internals) {
-    let decoratedInternals = {}
-    for (let internalName in internals) {
-        let {alias, getCall} = internals[internalName];
-        let routedCall = messageRouter.processMessage(getCall()).process;
-        decoratedInternals[alias] = {
-                                        call: routedCall
-                                    };
+function makeFeaturesRoutable(inputs){
+    let {featureStore} = inputs;
+
+    if (featureStore !== undefined){
+        featureStore.decorateAllFeatures(featureDecorator);
     }
-    return decoratedInternals;
 }
 
 function initRouters(inputs){
@@ -118,22 +95,22 @@ function initRouters(inputs){
         featureStore,
         externalClients,
         serverEndpoints,
-        internals
+        internals,
+        timers
     } = inputs;
-
-    externalClients = decorateClientsHandlers(externalClients);
-    let internalUnits = decorateInternalLogicUnits(internals);
 
     let internalSources = {
         ...externalClients,
-        ...internalUnits
+        ...internals
     }
+
 
     for (let internalName in internalSources){
         messageRouter.addInternal(internalName, internalSources[internalName]);
     }
 
     if (featureStore !== undefined && serverEndpoints !== undefined){
+
         let routerDefs = {};
         let requestHandlers = {};
 
@@ -158,5 +135,6 @@ function initRouters(inputs){
 }
 
 module.exports = {
+    makeFeaturesRoutable,
     initRouters
 }

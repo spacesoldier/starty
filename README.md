@@ -101,7 +101,7 @@ At the moment, the only one type of clients available.
 It is *web* client which can send requests using *http* or *https* protocols.
 
 Next, it's a good moment to think about the way the client may perform its operations.
-Probably it could be useful to imagine it has several `input`s dedicated to the `methods` used for calling an external API endpoint.
+Probably it could be useful to imagine it has several `alias`es dedicated to the `methods` used for calling an external API endpoint.
 And we also need to know what to do when the external API call ended with `success` or with `fail` result by providing 
 the function names which handle these sorts of result. Thus, an example of a client may look  like following:
 ```yaml
@@ -112,7 +112,7 @@ auth-api:   # client name
   port: 8080
   methods:
     post:
-      input: "authApiRequest"
+      alias: "authApiRequest"
       success: "onAuthSuccess"
       fail: "onAuthError"
 ```
@@ -124,15 +124,35 @@ On the contrary, it can be a very important part of the implementation of the se
 
 Starty allows to declare the internal parts of the logic in same style as it is done for the external resource clients.
 Even in more simple manner. To be able to route the messages to dedicated function `call`s
-it needs to know an alias or the `input` name of that function.
+it needs to know an `alias` of that function.
 
 As an example we could imagine a function which counts how many users are online:
 
 ```yaml
 internals:
   metrics:
-    input: "metricsCounter"
+    alias: "metricsCounter"
     call: "countUsersOnline"
+```
+
+&nbsp;
+#### Scheduled events
+Sometimes it is useful to perform some periodic operations. It could be sending some metrics, reports, etc.
+In Node.js you can set up a timer for such a purpose. Starty helps to set up all timers in one place 
+to keep an eye on the application structure.
+The `schedule` section of the application config contains the timer definitions. Every timer has its own name, `alias`
+and a `call` which points to the name of the function which will be executed by the timer. 
+This scheduled function should be defined among other internal logic functions.
+At this moment the `alias` of the timer is not important, but it could be used in future for managing timers. At least, cancelling or restarting them.
+
+For our example case, let's show how many users are `online`, once a minute:
+
+```yaml
+schedule:
+  online:
+    alias: "onlineReport"
+    call: "showUsersOnline"
+    period: 60000   # milliseconds
 ```
 
 &nbsp;
@@ -209,14 +229,20 @@ clients:
     port: ${AUTH_SRV_PORT:8080}
     methods:
       post:
-        input: "authApiRequest"
+        alias: "authApiRequest"
         success: "onAuthSuccess"
         fail: "onAuthError"
 
 internals:
  metrics:
-  input: "metricsCounter"
+  alias: "metricsCounter"
   call: "countUsersOnline"
+
+schedule:
+ online:
+  alias: "onlineReport"
+  call: "showUsersOnline"
+  period: 60000   # milliseconds
 
 ```
 &nbsp;
@@ -305,18 +331,18 @@ Let's take a look at the possible project structure in this case:
 │    ├─── session
 │    │    ├─── session.js
 │    │    └─── index.js
-│    ├─── serve-static
-│    │    ├─── data
-│    │    │    ├─── favicon.ico
-│    │    │    └─── index.html
-│    │    ├─── serve-static.js
-│    │    └─── index.js
+│    └─── serve-static
+│         ├─── data
+│         │    ├─── favicon.ico
+│         │    └─── index.html
+│         ├─── serve-static.js
+│         └─── index.js
 ├─── app.js
 ├─── config.yml
 └─── package.json
 ```
 
-Serving static content will be left for an exercise. Probably this feature will become a part of a framework in the future. 
+Serving static content will be left for an exercise. Probably this feature will become a part of a framework in future. 
 So as an example we will implement a session management functionality. Or at least a prototype of it, located in session.js file. 
 This is by no means a production-ready code, provided just for the showcase
 
@@ -491,7 +517,7 @@ module.exports = {
                   }
 ```
 In this case, the outgoing message will be routed to the external resource
-according to the property name which corresponds to the input name of the client connections
+according to the property name which corresponds to the alias of the client connections
 defined in the configuration file.
 
 After the receiving any results from the external resource Starty will forward them 
@@ -505,6 +531,12 @@ Assume the new session opened successfully and needed details are provided in `m
 At this point we could decide to provide these details to user, but also increase the number of users online.
 This decision may touch two zones of responsibility: one for receiving the details about new sessions and another for dealing with user counting.
 
+Also let's look at the scheduled function calls. According to the configuration described in previous chapter,
+there is one call which purpose is to report the current state of the online users counter.
+When firing a timed event Starty provides a *Date* object as `msg.payload`. 
+The result of a scheduled call could be routed to any internal or external receiver by the same rules as described above. 
+
+The example code which illustrates all these ideas could look like the following:
 ```javascript
 'use strict'
 const {loggerBuilder, logLevels} = require('starty');
@@ -562,9 +594,33 @@ function countUsersOnline(msg){
     return msg;
 }
 
+/**
+ *
+ * @param   {{  msgId:    string,
+ *              [request]:  {headers: {object}, query: {object}}, 
+ *              [response]: {object}, 
+ *              payload:  {Date}
+ *          }} msg
+ *
+ * @returns {{  msgId:    string, 
+ *              [request]:  {headers: {object}}, 
+ *              [response]: {headers:{object}}, 
+ *              payload:  {object}
+ *          }} msg
+ */
+function showUsersOnline(msg){
+    
+    let now = msg.payload.toISOString();
+    
+    log.info(`Currently at ${now} there are ${usersCount} users online`);
+    
+    return msg;
+}
+
 module.exports = {
                      onAuthSuccess,
-                     countUsersOnline
+                     countUsersOnline,
+                     showUsersOnline
                  }
 
 ```
@@ -585,7 +641,8 @@ https://github.com/spacesoldier/messageBridgeServicePrototype
 &nbsp;
 ## Version history
 
-0.1.9 - introducing scheduling the events [coming soon]
+0.1.9 - introducing scheduling the events by timer in milliseconds. Start using a word `alias`
+instead of `input` for internal functions in application configuration
 
 0.1.8 - implemented internal logic declaration as a bits of code which could be used as a separate logic level
 

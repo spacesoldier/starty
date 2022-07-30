@@ -17,13 +17,16 @@ function configureInternals(inputs){
         let internalUnits = {};
 
         for (let internalUnitName in internals){
-            let {input, call} = internals[internalUnitName];
+            let {alias, call} = internals[internalUnitName];
 
             let internalUnitCall = featureStore.featureFunctions[call];
             if ( internalUnitCall !== undefined){
-                internalUnits[internalUnitName] = internalUnitBuilder()
+
+                log.info(`new internal logic unit ${internalUnitName}`);
+
+                internalUnits[alias] = internalUnitBuilder()
                                                                 .name(internalUnitName)
-                                                                .alias(input)
+                                                                .alias(alias)
                                                                 .call(internalUnitCall)
                                                             .build();
             }

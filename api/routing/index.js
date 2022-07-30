@@ -1,6 +1,7 @@
 'use strict'
-const {initRouters} = require('./construct');
+const {makeFeaturesRoutable, initRouters} = require('./construct');
 
 module.exports = {
+    makeFeaturesRoutable,
     initRouters
 }

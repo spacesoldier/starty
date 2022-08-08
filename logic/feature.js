@@ -52,6 +52,23 @@ function FeatureStore(initActions, logic){
         }
     }
 
+    /**
+     *
+     * @param {Function} decorator
+     */
+    function decorateAllFeatures(decorator){
+        if (decorator !== undefined){
+            for (let featureFuncName in featureFunctions){
+                featureFunctions[featureFuncName] = decorator(featureFunctions[featureFuncName]);
+                log.info(`decorated a logic function ${featureFuncName} with ${decorator.name}`);
+            }
+
+            for (let initSeqStepName in initSequence){
+                initSequence[initSeqStepName] = decorator(initSequence[initSeqStepName]);
+            }
+        }
+    }
+
     async function initializeFeatures (){
             for (const action of initSequence) {
                 if (action instanceof Function){
@@ -64,7 +81,8 @@ function FeatureStore(initActions, logic){
         addInitAction,
         addFeatureFunction,
         initializeFeatures,
-        featureFunctions
+        featureFunctions,
+        decorateAllFeatures
     };
 }
 
@@ -100,7 +118,7 @@ function featureStoreBuilder(){
 
     /**
      *
-     * @returns {{initializeFeatures: initializeFeatures, addInitAction: addInitAction, addFeatureFunction: addFeatureFunction, featureFunctions: {}}}
+     * @returns {{initialize: initializeFeatures, addInitAction: addInitAction, addFeatureFunction: addFeatureFunction, featureFunctions: {}}}
      */
     function build(){
         return new FeatureStore(
@@ -111,7 +129,7 @@ function featureStoreBuilder(){
 
     return {
         initAction,
-        featureFunction,
+        featureFunctions,
         build
     }
 }

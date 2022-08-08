@@ -1,3 +1,5 @@
+'use strict'
+
 const {loggerBuilder, logLevels} = require("../../logging");
 
 const {routerBuilder} = require('./router');

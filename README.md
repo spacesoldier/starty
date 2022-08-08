@@ -641,6 +641,8 @@ https://github.com/spacesoldier/messageBridgeServicePrototype
 &nbsp;
 ## Version history
 
+0.1.10 - fixed an error with decorating features caused by out of sync library development process
+
 0.1.9 - introducing scheduling the events by timer in milliseconds. Start using a word `alias`
 instead of `input` for internal functions in application configuration
 

@@ -1,7 +1,7 @@
 'use strict'
 const {loggerBuilder} = require('../../../logging');
 const log = loggerBuilder()
-                    .name('init server')
+                    .name('routing tree')
                     .level('info')
                 .build();
 
@@ -59,7 +59,7 @@ function RouteNode(name, level){
         let childNode;
 
         for (let node of childNodes){
-            if (node.nodeName == name){
+            if (node.nodeName === name){
                 childNode = node;
                 break;
             }
@@ -88,7 +88,7 @@ function RouteNode(name, level){
      */
     function addHandler(path, method, handler){
         let searchPath = takePath(path);
-        if (searchPath.length == nodeLevel){
+        if (searchPath.length === nodeLevel){
             if (nodeName === searchPath[nodeLevel-1]){
                 if (method in requestHandlers){
                     log.warn(`method ${method} for ${searchPath.concat()} was already implemented, replacing..`);
@@ -112,7 +112,7 @@ function RouteNode(name, level){
     function findHandler(path, method){
         let requestHandler;
         let searchPath = takePath(path);
-        if (searchPath.length == nodeLevel){
+        if (searchPath.length === nodeLevel){
             if (nodeName === searchPath[nodeLevel-1]){
                 if (method in requestHandlers){
                     requestHandler = requestHandlers[method];

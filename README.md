@@ -641,9 +641,11 @@ https://github.com/spacesoldier/messageBridgeServicePrototype
 &nbsp;
 ## Version history
 
+0.1.11 - correctly terminating the startup sequence in case of error in user defined code; correctly show the logging level in log messages
+
 0.1.10 - fixed an error with decorating features caused by out of sync library development process
 
-0.1.9 - introducing scheduling the events by timer in milliseconds. Start using a word `alias`
+0.1.9 [deprecated] - introducing scheduling the events by timer in milliseconds. Start using a word `alias`
 instead of `input` for internal functions in application configuration
 
 0.1.8 - implemented internal logic declaration as a bits of code which could be used as a separate logic level
@@ -654,13 +656,13 @@ instead of `input` for internal functions in application configuration
 
 0.1.5 - fixed a bug when request processing fails at the beginning
 
-0.1.4 - environment variables support in application config
+0.1.4 [deprecated] - environment variables support in application config
 
 0.1.3 - returning status code 200 automatically only in case when it was not provided by user-defined code
 
 0.1.2 - added the support for the query parameters, fixed some bugs and finished the idea of separation the request handling by the framework and message processing by the user defined code
 
-0.1.1 - the very first draft, usable for building simple REST API which could call external API with GET and POST methods
+0.1.1 [deprecated] - the very first draft, usable for building simple REST API which could call external API with GET and POST methods
 
 ## Contacts
 I appreciate any feedback, so please feel free to write me an email: 

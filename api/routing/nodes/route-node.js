@@ -1,8 +1,8 @@
 'use strict'
-const {loggerBuilder} = require('../../../logging');
+const {loggerBuilder, logLevels} = require('../../../logging');
 const log = loggerBuilder()
                     .name('routing tree')
-                    .level('info')
+                    .level(logLevels.INFO)
                 .build();
 
 const routeErrors = {

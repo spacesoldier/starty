@@ -2,7 +2,7 @@
 const http = require('http');
 const https = require('https');
 
-const {loggerBuilder} = require('../../logging');
+const {loggerBuilder, logLevels} = require('../../logging');
 
 const supportedProtocols = {
     HTTP: 'http',
@@ -35,7 +35,7 @@ function Server(host, port, protocol, rqHandler){
 
     const log = loggerBuilder()
                     .name(`${serverProtocol} server (${portToListen})`)
-                    .level('info')
+                    .level(logLevels.INFO)
                 .build();
 
     /**

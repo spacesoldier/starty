@@ -1,6 +1,6 @@
 'use strict'
 
-const {loggerBuilder} = require('../logging');
+const {loggerBuilder, logLevels} = require('../logging');
 
 /**
  *
@@ -16,7 +16,7 @@ function FeatureStore(initActions, logic){
 
     const log = loggerBuilder()
                             .name('feature store')
-                            .level('info')
+                            .level(logLevels.INFO)
                     .build();
 
     /**

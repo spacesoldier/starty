@@ -2,12 +2,12 @@
 const appRoot = require('app-root-path');
 const {promises} = require('fs');
 
-const {loggerBuilder} = require('../logging');
+const {loggerBuilder, logLevels} = require('../logging');
 const {featureStoreBuilder} = require('./feature');
 
 const log = loggerBuilder()
                     .name('feature loader')
-                    .level('info')
+                    .level(logLevels.INFO)
                 .build();
 
 const featureStore = featureStoreBuilder().build();
@@ -72,16 +72,34 @@ async function loadFeatures(inputs){
     } else {
         const featureModules = {};
 
+        const errors = [];
+
         allFeatureDirs.forEach(featureDir => {
-            featureModules[featureDir] = require(`${featuresBasePath}/${featureDir}`);
+            try {
+                featureModules[featureDir] = require(`${featuresBasePath}/${featureDir}`);
+            } catch (ex){
+                errors.push({
+                    feature: featureDir,
+                    error: ex.toString()
+                })
+
+            }
         });
 
-        return {
+        let result = {
             featureStore: buildFeatures(featureModules)
-        };
+        }
+
+        if (errors.length > 0){
+            let errorsDesc = errors.map(item => `${item.feature} due to ${item.error}`).join(',');
+            result.error = `these features would not be loaded: ${errorsDesc}`;
+        }
+
+        return result;
     }
 
 }
+
 
 /**
  *

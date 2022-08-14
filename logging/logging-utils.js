@@ -12,7 +12,7 @@ const logLevels = {
     ERROR: 'ERROR'
 }
 
-function log(loggerName, loggingLevel='info', loggingSink){
+function log(loggerName, loggingLevel= logLevels.INFO, loggingSink){
 
     const logName = loggerName;
     const logLevel = loggingLevel;
@@ -20,8 +20,8 @@ function log(loggerName, loggingLevel='info', loggingSink){
 
     const logMsgTemplate = `[${dateTimeMs()}] `;
 
-    function logMessage(msgLevel, msg){
-        return logMsgTemplate + `[${logLevel}] [${logName}] ${msg}`;
+    function logMessage(level, msg){
+        return logMsgTemplate + `[${level}] [${logName}] ${msg}`;
     }
 
     /**

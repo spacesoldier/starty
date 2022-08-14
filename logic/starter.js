@@ -1,35 +1,39 @@
 'use strict'
 
+const {loggerBuilder, logLevels} = require("../logging");
+const log = loggerBuilder()
+                    .name('app starter')
+                    .level(logLevels.INFO)
+                .build();
+
 function StateConstructor(initialState){
 
     let currentState = initialState;
 
     /**
      *
-     * @param {Object} inputs
+     * @param {Object} params
      * @param {Function} callback
      * @returns {*}
      */
-    async function incrementState(callback, inputs){
+    async function incrementState(callback, params){
 
         let stateError;
 
-        if (inputs !== undefined){
-            let {error} = inputs;
+        if (currentState !== undefined){
+            let {error} = currentState;
             stateError = error;
         }
 
         if (stateError !== undefined){
-            currentState = {
-                ...currentState,
-                error: stateError
-            }
+            // skip the startup stage calls if an error occurred before
+            log.error(`skip the stage: ${callback.name}`);
         } else {
             let stateIncrement;
             try {
                 stateIncrement = await callback({
                     ...currentState,
-                    ...inputs
+                    ...params
                 });
             } catch (ex) {
                 stateIncrement = { error: ex }
@@ -40,7 +44,15 @@ function StateConstructor(initialState){
             }
         }
 
-        return new StateConstructor(currentState);
+        let {error} = currentState;
+
+        if (error !== undefined){
+            let errorStatus = `Startup sequence terminated on ${callback.name} stage`;
+            log.error(errorStatus);
+            throw Error(error);
+        } else {
+            return new StateConstructor(currentState);
+        }
     }
 
     return {
